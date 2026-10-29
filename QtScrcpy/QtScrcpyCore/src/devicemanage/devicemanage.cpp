@@ -38,7 +38,11 @@ bool DeviceManage::connectDevice(qsc::DeviceParams params)
         return false;
     }
     if (m_devices.contains(params.serial)) {
-        return false;
+        if (!m_devices[params.serial] || !m_devices[params.serial]->getUserData()) {
+            removeDevice(params.serial);
+        } else {
+            return false;
+        }
     }
     if (DM_MAX_DEVICES_NUM < m_devices.size()) {
         qInfo("over the maximum number of connections");
@@ -78,6 +82,7 @@ bool DeviceManage::disconnectDevice(const QString &serial)
             delete it->data();
             ret = true;
         }
+        m_devices.remove(serial);
     }
     return ret;
 }
@@ -91,6 +96,7 @@ void DeviceManage::disconnectAllDevice()
             delete i.value();
         }
     }
+    m_devices.clear();
 }
 
 void DeviceManage::onDeviceConnected(bool success, const QString &serial, const QString &deviceName, const QSize &size)

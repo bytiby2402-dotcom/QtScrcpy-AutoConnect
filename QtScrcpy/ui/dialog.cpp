@@ -1,4 +1,4 @@
-﻿#include <QDebug>
+#include <QDebug>
 #include <QAbstractItemView>
 #include <QDesktopServices>
 #include <QCheckBox>
@@ -129,6 +129,11 @@ Dialog::Dialog(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
         m_autoUpdatetimer.start(5000);
     }
 
+    connect(&m_autoConnectTimer, &QTimer::timeout, this, &Dialog::on_autoConnectTimer_timeout);
+    if (ui->autoConnectcheckBox->isChecked()) {
+        m_autoConnectTimer.start(3000);
+    }
+
     connect(&m_adb, &qsc::AdbProcess::adbProcessResult, this, [this](qsc::AdbProcess::ADB_EXEC_RESULT processResult) {
         QString log = "";
         bool newLine = true;
@@ -163,7 +168,11 @@ Dialog::Dialog(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
 
                 if (ui->autoConnectcheckBox && ui->autoConnectcheckBox->isChecked()) {
                     for (const auto &item : devices) {
-                        if (!qsc::IDeviceManage::getInstance().getDevice(item)) {
+                        auto device = qsc::IDeviceManage::getInstance().getDevice(item);
+                        if (!device || !device->getUserData()) {
+                            if (device) {
+                                qsc::IDeviceManage::getInstance().disconnectDevice(item);
+                            }
                             startServerBySerial(item);
                         }
                     }
@@ -1328,8 +1337,9 @@ void Dialog::onDeviceDisconnected(QString serial)
     }
     auto data = device->getUserData();
     if (data) {
+        device->setUserData(nullptr);
         VideoForm* vf = static_cast<VideoForm*>(data);
-        qsc::IDeviceManage::getInstance().getDevice(serial)->deRegisterDeviceObserver(vf);
+        device->deRegisterDeviceObserver(vf);
         vf->close();
         vf->deleteLater();
     }
@@ -1603,7 +1613,36 @@ void Dialog::on_autoConnectcheckBox_toggled(bool checked)
         if (!ui->autoUpdatecheckBox->isChecked()) {
             ui->autoUpdatecheckBox->setChecked(true);
         }
-        on_updateDevice_clicked();
+        m_autoConnectTimer.start(3000);
+        on_autoConnectTimer_timeout();
+    } else {
+        m_autoConnectTimer.stop();
+    }
+}
+
+void Dialog::on_autoConnectTimer_timeout()
+{
+    if (!ui->autoConnectcheckBox || !ui->autoConnectcheckBox->isChecked()) {
+        return;
+    }
+
+    if (!m_adb.isRuning()) {
+        m_adb.execute("", QStringList() << "devices");
+    }
+
+    for (int i = 0; i < ui->serialBox->count(); ++i) {
+        QString serial = ui->serialBox->itemText(i).trimmed();
+        if (serial.isEmpty()) {
+            continue;
+        }
+
+        auto device = qsc::IDeviceManage::getInstance().getDevice(serial);
+        if (!device || !device->getUserData()) {
+            if (device) {
+                qsc::IDeviceManage::getInstance().disconnectDevice(serial);
+            }
+            startServerBySerial(serial);
+        }
     }
 }
 

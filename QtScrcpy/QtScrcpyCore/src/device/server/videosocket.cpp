@@ -20,9 +20,18 @@ qint32 VideoSocket::subThreadRecvData(quint8 *buf, qint32 bufSize)
     // this function cant call in main thread
     Q_ASSERT(QCoreApplication::instance()->thread() != QThread::currentThread());
 
+    QThread *curThread = QThread::currentThread();
     while (bytesAvailable() < bufSize) {
-        if (!waitForReadyRead(-1)) {
+        if (curThread && curThread->isInterruptionRequested()) {
             return 0;
+        }
+        if (state() != QAbstractSocket::ConnectedState) {
+            return 0;
+        }
+        if (!waitForReadyRead(500)) {
+            if (state() != QAbstractSocket::ConnectedState || (curThread && curThread->isInterruptionRequested())) {
+                return 0;
+            }
         }
     }
 

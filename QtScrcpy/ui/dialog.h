@@ -1,4 +1,4 @@
-﻿#ifndef DIALOG_H
+#ifndef DIALOG_H
 #define DIALOG_H
 
 #include <QWidget>
@@ -77,6 +77,7 @@ private slots:
 
     void on_autoUpdatecheckBox_toggled(bool checked);
     void on_autoConnectcheckBox_toggled(bool checked);
+    void on_autoConnectTimer_timeout();
 
     void on_codecModeBox_currentIndexChanged(int index);
     void on_presetConfigBtn_clicked();
@@ -148,6 +149,7 @@ private:
     QAction *m_quit;
     AudioOutput m_audioOutput;
     QTimer m_autoUpdatetimer;
+    QTimer m_autoConnectTimer;
     quint32 m_prevBitRate = 2000000;
     int m_prevMaxSizeIndex = 0;
     QPointer<PresetConfigDialog> m_presetDialog;

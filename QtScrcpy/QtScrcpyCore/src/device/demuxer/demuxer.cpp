@@ -112,7 +112,11 @@ bool Demuxer::startDecode()
 
 void Demuxer::stopDecode()
 {
-    wait();
+    requestInterruption();
+    if (m_videoSocket) {
+        m_videoSocket->abort();
+    }
+    wait(1000);
 }
 
 void Demuxer::run()
