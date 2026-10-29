@@ -63,13 +63,14 @@ bool DeviceManage::connectDevice(qsc::DeviceParams params)
     }
     */
     IDevice *device = new Device(params);
+    m_devices[params.serial] = device;
     connect(device, &Device::deviceConnected, this, &DeviceManage::onDeviceConnected);
     connect(device, &Device::deviceDisconnected, this, &DeviceManage::onDeviceDisconnected);
     if (!device->connectDevice()) {
+        m_devices.remove(params.serial);
         delete device;
         return false;
     }
-    m_devices[params.serial] = device;
     return true;
 }
 
