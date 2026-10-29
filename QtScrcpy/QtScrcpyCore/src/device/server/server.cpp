@@ -323,6 +323,7 @@ void Server::stop()
     if (m_controlSocket) {
         m_controlSocket->close();
         m_controlSocket->deleteLater();
+        m_controlSocket = Q_NULLPTR;
     }
     // ignore failure
     m_serverProcess.kill();

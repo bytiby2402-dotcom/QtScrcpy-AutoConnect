@@ -168,11 +168,7 @@ Dialog::Dialog(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
 
                 if (ui->autoConnectcheckBox && ui->autoConnectcheckBox->isChecked()) {
                     for (const auto &item : devices) {
-                        auto device = qsc::IDeviceManage::getInstance().getDevice(item);
-                        if (!device || !device->getUserData()) {
-                            if (device) {
-                                qsc::IDeviceManage::getInstance().disconnectDevice(item);
-                            }
+                        if (!qsc::IDeviceManage::getInstance().getDevice(item)) {
                             startServerBySerial(item);
                         }
                     }
@@ -1636,11 +1632,7 @@ void Dialog::on_autoConnectTimer_timeout()
             continue;
         }
 
-        auto device = qsc::IDeviceManage::getInstance().getDevice(serial);
-        if (!device || !device->getUserData()) {
-            if (device) {
-                qsc::IDeviceManage::getInstance().disconnectDevice(serial);
-            }
+        if (!qsc::IDeviceManage::getInstance().getDevice(serial)) {
             startServerBySerial(serial);
         }
     }

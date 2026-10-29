@@ -38,8 +38,8 @@ bool DeviceManage::connectDevice(qsc::DeviceParams params)
         return false;
     }
     if (m_devices.contains(params.serial)) {
-        if (!m_devices[params.serial] || !m_devices[params.serial]->getUserData()) {
-            removeDevice(params.serial);
+        if (!m_devices[params.serial]) {
+            m_devices.remove(params.serial);
         } else {
             return false;
         }
@@ -79,7 +79,7 @@ bool DeviceManage::disconnectDevice(const QString &serial)
     if (!serial.isEmpty() && m_devices.contains(serial)) {
         auto it = m_devices.find(serial);
         if (it->data()) {
-            delete it->data();
+            it->data()->deleteLater();
             ret = true;
         }
         m_devices.remove(serial);
@@ -93,7 +93,7 @@ void DeviceManage::disconnectAllDevice()
     while (i.hasNext()) {
         i.next();
         if (i.value()) {
-            delete i.value();
+            i.value()->deleteLater();
         }
     }
     m_devices.clear();
