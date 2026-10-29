@@ -12,6 +12,9 @@ cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 set(QC_PROJECT_NAME "QtScrcpy")
 # Read version numbers from file
 file(STRINGS ${CMAKE_CURRENT_SOURCE_DIR}/appversion QC_FILE_VERSION)
+if(NOT QC_FILE_VERSION)
+    set(QC_FILE_VERSION "4.2.1")
+endif()
 set(QC_PROJECT_VERSION ${QC_FILE_VERSION})
 
 # Project declare

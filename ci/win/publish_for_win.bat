@@ -54,12 +54,15 @@ if /i %cpu_mode% == x86 (
     set release_path=%script_path%..\..\output\x64\RelWithDebInfo
     set qt_msvc_path=%qt_msvc_path%\msvc2019_64\bin
 )
+if not exist "%qt_msvc_path%" (
+    if not "%QT_ROOT%"=="" (
+        set qt_msvc_path=%QT_ROOT%\bin
+    )
+)
 set PATH=%qt_msvc_path%;%PATH%
 
 :: 注册vc环境(注册以后，windeployqt会把vc_redist复制过来（vcruntime安装包）)
-if /i %cpu_mode% == x86 (
-    call %vcvarsall% %cpu_mode%
-) else (
+if exist %vcvarsall% (
     call %vcvarsall% %cpu_mode%
 )
 

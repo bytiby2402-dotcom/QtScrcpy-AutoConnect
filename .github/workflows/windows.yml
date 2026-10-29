@@ -44,7 +44,7 @@ jobs:
           version: ${{ matrix.qt-ver }}
           target: desktop
           arch: ${{ matrix.qt-arch }}
-          cached: ${{ steps.cache-qt.outputs.cache-hit }}
+          dir: ${{ github.workspace }}
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -74,7 +74,7 @@ jobs:
           publish_name: ${{ env.target-name }}-${{ env.plantform-des }}-${{ matrix.msvc-arch }}-AutoConnect
         run: |
           cmd.exe /c ci\win\publish_for_win.bat ${{ matrix.msvc-arch }} ..\build\${{ env.publish_name }}
-          Compress-Archive -Path ci\build\${{ env.publish_name }} ci\build\${{ env.publish_name }}.zip
+          Compress-Archive -Path "ci\build\${{ env.publish_name }}" -DestinationPath "ci\build\${{ env.publish_name }}.zip"
           echo "package-name=${{ env.publish_name }}" >> $env:GITHUB_OUTPUT
 
       - name: Upload Artifact
