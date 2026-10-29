@@ -48,20 +48,10 @@ bool DeviceManage::connectDevice(qsc::DeviceParams params)
         qInfo("over the maximum number of connections");
         return false;
     }
-    /*
-    // 没有必要分配端口，都用27183即可，连接建立以后server会释放监听的
-    quint16 port = 0;
-    if (params.useReverse) {
-         port = getFreePort();
-        if (0 == port) {
-            qInfo("no port available, automatically switch to forward");
-            params.useReverse = false;
-        } else {
-            params.localPort = port;
-            qInfo("free port %d", port);
-        }
+    quint16 port = getFreePort();
+    if (0 != port) {
+        params.localPort = port;
     }
-    */
     IDevice *device = new Device(params);
     m_devices[params.serial] = device;
     connect(device, &Device::deviceConnected, this, &DeviceManage::onDeviceConnected);

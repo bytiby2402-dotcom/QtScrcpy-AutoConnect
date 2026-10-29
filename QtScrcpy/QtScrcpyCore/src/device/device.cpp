@@ -212,11 +212,7 @@ void Device::cameraZoomOut()
 
 bool Device::isReversePort(quint16 port)
 {
-    if (m_server && m_server->isReverse() && port == m_server->getParams().localPort) {
-        return true;
-    }
-
-    return false;
+    return m_params.localPort == port;
 }
 
 void Device::initSignals()
