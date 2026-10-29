@@ -14,71 +14,69 @@ jobs:
     name: Build Windows x64
     runs-on: windows-2022
 
-    strategy:
-      matrix:
-        qt-ver: [5.15.2]
-        qt-arch: [win64_msvc2019_64]
-        include:
-          - qt-arch: win64_msvc2019_64
-            msvc-arch: x64
-            qt-arch-install: msvc2019_64
-
-    env:
-      target-name: QtScrcpy
-      vcvarsall-path: 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat'
-      vcinstall-path: 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC'
-      qt-install-path: ${{ github.workspace }}/${{ matrix.qt-ver }}
-      plantform-des: win
-
     steps:
-      - name: Cache Qt
-        id: cache-qt
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.qt-install-path }}/${{ matrix.qt-arch-install }}
-          key: ${{ runner.os }}/${{ matrix.qt-ver }}/${{ matrix.qt-arch }}        
-
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v4.1.1
-        with:
-          version: ${{ matrix.qt-ver }}
-          target: desktop
-          arch: ${{ matrix.qt-arch }}
-          dir: ${{ github.workspace }}
-
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Build MSVC
-        shell: cmd
-        env:
-          ENV_VCVARSALL: ${{ env.vcvarsall-path }}
-          ENV_QT_PATH: ${{ env.qt-install-path }}
-        run: |
-          call python ci\generate-version.py
-          call "ci\win\build_for_win.bat" RelWithDebInfo ${{ matrix.msvc-arch }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
-      - name: Get the version
-        shell: bash
-        id: get-version
-        run: echo "version=${GITHUB_REF##*/}" >> $GITHUB_OUTPUT
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '5.15.2'
+          target: 'desktop'
+          arch: 'win64_msvc2019_64'
+
+      - name: Generate Version
+        shell: cmd
+        run: |
+          python ci\generate-version.py
+          type QtScrcpy\appversion
+
+      - name: Build with CMake
+        shell: cmd
+        run: |
+          mkdir ci\build_temp
+          cd ci\build_temp
+          cmake -DCMAKE_PREFIX_PATH="%QT_ROOT_DIR%\lib\cmake\Qt5" -DCMAKE_BUILD_TYPE=RelWithDebInfo -G "Visual Studio 17 2022" -A x64 ..\..
+          cmake --build . --config RelWithDebInfo -j4
 
       - name: Package
-        id: package
-        env:
-          ENV_VCVARSALL: ${{ env.vcvarsall-path }}
-          ENV_VCINSTALL: ${{ env.vcinstall-path }}
-          ENV_QT_PATH: ${{ env.qt-install-path }}
-          publish_name: ${{ env.target-name }}-${{ env.plantform-des }}-${{ matrix.msvc-arch }}-AutoConnect
+        shell: pwsh
         run: |
-          cmd.exe /c ci\win\publish_for_win.bat ${{ matrix.msvc-arch }} ..\build\${{ env.publish_name }}
-          Compress-Archive -Path "ci\build\${{ env.publish_name }}" -DestinationPath "ci\build\${{ env.publish_name }}.zip"
-          echo "package-name=${{ env.publish_name }}" >> $env:GITHUB_OUTPUT
+          $publishName = "QtScrcpy-win-x64-AutoConnect"
+          $publishPath = "ci\build\$publishName"
+          New-Item -ItemType Directory -Force -Path $publishPath
+          
+          # Copy compiled output
+          Copy-Item -Path "output\x64\RelWithDebInfo\*" -Destination $publishPath -Recurse -Force
+          
+          # Copy third party tools and assets
+          Copy-Item -Path "QtScrcpy\QtScrcpyCore\src\third_party\adb\win\*" -Destination $publishPath -Force
+          Copy-Item -Path "QtScrcpy\QtScrcpyCore\src\third_party\scrcpy-server" -Destination $publishPath -Force
+          Copy-Item -Path "keymap" -Destination "$publishPath\keymap" -Recurse -Force
+          Copy-Item -Path "config" -Destination "$publishPath\config" -Recurse -Force
+          Copy-Item -Path "QtScrcpy\sndcpy\sndcpy.bat" -Destination $publishPath -Force
+          Copy-Item -Path "QtScrcpy\sndcpy\sndcpy.apk" -Destination $publishPath -Force
+
+          # Deploy Qt dependencies using windeployqt
+          $windeployqt = "$env:QT_ROOT_DIR\bin\windeployqt.exe"
+          & $windeployqt "$publishPath\QtScrcpy.exe"
+          
+          # Cleanup unnecessary Qt files
+          Remove-Item -Path "$publishPath\translations" -Recurse -ErrorAction SilentlyContinue
+          Remove-Item -Path "$publishPath\iconengines" -Recurse -ErrorAction SilentlyContinue
+
+          # Compress to zip
+          Compress-Archive -Path $publishPath -DestinationPath "ci\build\$publishName.zip" -Force
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: QtScrcpy-AutoConnect-win-x64
-          path: ci\build\${{ steps.package.outputs.package-name }}.zip
+          path: ci\build\QtScrcpy-win-x64-AutoConnect.zip
