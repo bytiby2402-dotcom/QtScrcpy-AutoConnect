@@ -19,6 +19,7 @@ public:
     bool connectDevice(qsc::DeviceParams params) override;
     bool disconnectDevice(const QString &serial) override;
     void disconnectAllDevice() override;
+    virtual QStringList getConnectedSerials() override;
 
 protected slots:
     void onDeviceConnected(bool success, const QString& serial, const QString& deviceName, const QSize& size);

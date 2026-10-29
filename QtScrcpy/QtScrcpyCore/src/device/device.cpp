@@ -456,9 +456,7 @@ void Device::disconnectDevice()
         m_recorder->close();
     }
 
-    if (m_serverStartSuccess) {
-        emit deviceDisconnected(m_params.serial);
-    }
+    emit deviceDisconnected(m_params.serial);
     m_serverStartSuccess = false;
 }
 

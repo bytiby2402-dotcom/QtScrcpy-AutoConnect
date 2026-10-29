@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QPointer>
+#include <QMap>
 #include <QMessageBox>
 #include <QMenu>
 #include <QSystemTrayIcon>
@@ -27,6 +28,7 @@ class QCheckBox;
 class QGroupBox;
 class QPushButton;
 class QSpinBox;
+class VideoForm;
 class Dialog : public QWidget
 {
     Q_OBJECT
@@ -86,6 +88,10 @@ private slots:
     void on_refreshCameraBtn_clicked();
 
     void showIpEditMenu(const QPoint &pos);
+
+    void on_btnKidotuti_clicked();
+    void on_startAllServerBtn_clicked();
+    void startAllDevices();
 
 private:
     bool checkAdbRun();
@@ -153,6 +159,7 @@ private:
     quint32 m_prevBitRate = 2000000;
     int m_prevMaxSizeIndex = 0;
     QPointer<PresetConfigDialog> m_presetDialog;
+    QMap<QString, QPointer<VideoForm>> m_videoForms;
 };
 
 #endif // DIALOG_H

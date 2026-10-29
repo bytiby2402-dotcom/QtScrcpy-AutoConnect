@@ -166,6 +166,22 @@ Dialog::Dialog(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
                     ui->connectedPhoneList->addItem(Config::getInstance().getNickName(item) + "-" + item);
                 }
 
+                // Clean up disconnected / unplugged devices
+                QStringList activeSerials = m_videoForms.keys();
+                for (const QString &s : activeSerials) {
+                    if (!devices.contains(s)) {
+                        qsc::IDeviceManage::getInstance().disconnectDevice(s);
+                        onDeviceDisconnected(s);
+                    }
+                }
+                QStringList connected = qsc::IDeviceManage::getInstance().getConnectedSerials();
+                for (const QString &s : connected) {
+                    if (!devices.contains(s)) {
+                        qsc::IDeviceManage::getInstance().disconnectDevice(s);
+                        onDeviceDisconnected(s);
+                    }
+                }
+
                 if (ui->autoConnectcheckBox && ui->autoConnectcheckBox->isChecked()) {
                     int delay = 0;
                     for (const auto &item : devices) {
@@ -847,6 +863,34 @@ void Dialog::on_startServerBtn_clicked()
     startServerBySerial(ui->serialBox->currentText().trimmed());
 }
 
+void Dialog::on_btnKidotuti_clicked()
+{
+    startAllDevices();
+}
+
+void Dialog::on_startAllServerBtn_clicked()
+{
+    startAllDevices();
+}
+
+void Dialog::startAllDevices()
+{
+    outLog(tr("start all devices..."));
+    int delay = 0;
+    for (int i = 0; i < ui->serialBox->count(); ++i) {
+        QString serial = ui->serialBox->itemText(i).trimmed();
+        if (serial.isEmpty()) continue;
+        if (!qsc::IDeviceManage::getInstance().getDevice(serial)) {
+            QTimer::singleShot(delay, this, [this, serial]() {
+                if (!qsc::IDeviceManage::getInstance().getDevice(serial)) {
+                    startServerBySerial(serial);
+                }
+            });
+            delay += 100;
+        }
+    }
+}
+
 void Dialog::startServerBySerial(const QString &serial)
 {
     if (serial.isEmpty()) {
@@ -1291,6 +1335,7 @@ void Dialog::onDeviceConnected(bool success, const QString &serial, const QStrin
     }
     auto videoForm = new VideoForm(ui->framelessCheck->isChecked(), Config::getInstance().getSkin(), ui->showToolbar->isChecked(), ui->decodeModeBox->currentIndex());
     videoForm->setSerial(serial);
+    m_videoForms[serial] = videoForm;
 
     qsc::IDeviceManage::getInstance().getDevice(serial)->setUserData(static_cast<void*>(videoForm));
     qsc::IDeviceManage::getInstance().getDevice(serial)->registerDeviceObserver(videoForm);
@@ -1334,15 +1379,19 @@ void Dialog::onDeviceConnected(bool success, const QString &serial, const QStrin
 void Dialog::onDeviceDisconnected(QString serial)
 {
     GroupController::instance().removeDevice(serial);
+    VideoForm* vf = m_videoForms.take(serial);
     auto device = qsc::IDeviceManage::getInstance().getDevice(serial);
-    if (!device) {
-        return;
-    }
-    auto data = device->getUserData();
-    if (data) {
+    if (device) {
+        auto data = device->getUserData();
+        if (data && !vf) {
+            vf = static_cast<VideoForm*>(data);
+        }
         device->setUserData(nullptr);
-        VideoForm* vf = static_cast<VideoForm*>(data);
-        device->deRegisterDeviceObserver(vf);
+        if (vf) {
+            device->deRegisterDeviceObserver(vf);
+        }
+    }
+    if (vf) {
         vf->close();
         vf->deleteLater();
     }
@@ -1392,6 +1441,13 @@ void Dialog::on_clearOut_clicked()
 void Dialog::on_stopAllServerBtn_clicked()
 {
     qsc::IDeviceManage::getInstance().disconnectAllDevice();
+    for (auto it = m_videoForms.begin(); it != m_videoForms.end(); ++it) {
+        if (it.value()) {
+            it.value()->close();
+            it.value()->deleteLater();
+        }
+    }
+    m_videoForms.clear();
 }
 
 void Dialog::on_refreshGameScriptBtn_clicked()

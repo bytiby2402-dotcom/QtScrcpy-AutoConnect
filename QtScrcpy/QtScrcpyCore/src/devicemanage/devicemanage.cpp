@@ -91,6 +91,11 @@ void DeviceManage::disconnectAllDevice()
     m_devices.clear();
 }
 
+QStringList DeviceManage::getConnectedSerials()
+{
+    return m_devices.keys();
+}
+
 void DeviceManage::onDeviceConnected(bool success, const QString &serial, const QString &deviceName, const QSize &size)
 {
     emit deviceConnected(success, serial, deviceName, size);
