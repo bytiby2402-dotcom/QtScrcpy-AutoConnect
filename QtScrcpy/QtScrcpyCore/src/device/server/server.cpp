@@ -337,6 +337,7 @@ void Server::stop()
         m_tunnelEnabled = false;
     }
     m_serverSocket.close();
+    m_serverSocket.reset();
 }
 
 bool Server::startServerByStep()
@@ -401,7 +402,7 @@ bool Server::readInfo(VideoSocket *videoSocket, QString &deviceName, QSize &size
 void Server::startAcceptTimeoutTimer()
 {
     stopAcceptTimeoutTimer();
-    m_acceptTimeoutTimer = startTimer(1000);
+    m_acceptTimeoutTimer = startTimer(10000);
 }
 
 void Server::stopAcceptTimeoutTimer()

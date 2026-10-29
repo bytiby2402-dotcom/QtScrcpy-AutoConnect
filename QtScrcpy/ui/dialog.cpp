@@ -167,9 +167,16 @@ Dialog::Dialog(QWidget *parent) : QWidget(parent), ui(new Ui::Widget)
                 }
 
                 if (ui->autoConnectcheckBox && ui->autoConnectcheckBox->isChecked()) {
+                    int delay = 0;
                     for (const auto &item : devices) {
                         if (!qsc::IDeviceManage::getInstance().getDevice(item)) {
-                            startServerBySerial(item);
+                            QTimer::singleShot(delay, this, [this, item]() {
+                                if (ui->autoConnectcheckBox && ui->autoConnectcheckBox->isChecked() &&
+                                    !qsc::IDeviceManage::getInstance().getDevice(item)) {
+                                    startServerBySerial(item);
+                                }
+                            });
+                            delay += 100;
                         }
                     }
                 }
@@ -1624,17 +1631,6 @@ void Dialog::on_autoConnectTimer_timeout()
 
     if (!m_adb.isRuning()) {
         m_adb.execute("", QStringList() << "devices");
-    }
-
-    for (int i = 0; i < ui->serialBox->count(); ++i) {
-        QString serial = ui->serialBox->itemText(i).trimmed();
-        if (serial.isEmpty()) {
-            continue;
-        }
-
-        if (!qsc::IDeviceManage::getInstance().getDevice(serial)) {
-            startServerBySerial(serial);
-        }
     }
 }
 

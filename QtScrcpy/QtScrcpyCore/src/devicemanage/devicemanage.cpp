@@ -2,6 +2,7 @@
 #include <QKeyEvent>
 #include <QMouseEvent>
 #include <QWheelEvent>
+#include <QTcpServer>
 
 #include "devicemanage.h"
 #include "device.h"
@@ -119,7 +120,11 @@ quint16 DeviceManage::getFreePort()
             }
         }
         if (!used) {
-            return port;
+            QTcpServer testServer;
+            if (testServer.listen(QHostAddress::LocalHost, port)) {
+                testServer.close();
+                return port;
+            }
         }
         port++;
     }

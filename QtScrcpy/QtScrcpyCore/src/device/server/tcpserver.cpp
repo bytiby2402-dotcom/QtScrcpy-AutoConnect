@@ -5,6 +5,17 @@ TcpServer::TcpServer(QObject *parent) : QTcpServer(parent) {}
 
 TcpServer::~TcpServer() {}
 
+bool TcpServer::listen(const QHostAddress &address, quint16 port)
+{
+    reset();
+    return QTcpServer::listen(address, port);
+}
+
+void TcpServer::reset()
+{
+    m_isVideoSocket = true;
+}
+
 void TcpServer::incomingConnection(qintptr handle)
 {
     if (m_isVideoSocket) {

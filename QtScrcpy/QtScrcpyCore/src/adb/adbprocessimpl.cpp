@@ -81,15 +81,15 @@ void AdbProcessImpl::initSignals()
     });
 
     connect(this, &QProcess::readyReadStandardError, this, [this]() {
-        QString tmp = QString::fromUtf8(readAllStandardError()).trimmed();
-        m_errorOutput += tmp;
-        qWarning() << QString("AdbProcessImpl::error:%1").arg(tmp).toStdString().data();
+        QByteArray data = readAllStandardError();
+        m_errorOutput += QString::fromUtf8(data);
+        qWarning() << QString("AdbProcessImpl::error:%1").arg(QString::fromUtf8(data).trimmed()).toStdString().data();
     });
 
     connect(this, &QProcess::readyReadStandardOutput, this, [this]() {
-        QString tmp = QString::fromUtf8(readAllStandardOutput()).trimmed();
-        m_standardOutput += tmp;
-        qInfo() << QString("AdbProcessImpl::out:%1").arg(tmp).toStdString().data();
+        QByteArray data = readAllStandardOutput();
+        m_standardOutput += QString::fromUtf8(data);
+        qInfo() << QString("AdbProcessImpl::out:%1").arg(QString::fromUtf8(data).trimmed()).toStdString().data();
     });
 
     connect(this, &QProcess::started, this, [this]() { emit adbProcessImplResult(qsc::AdbProcess::AER_SUCCESS_START); });
@@ -134,16 +134,28 @@ QStringList AdbProcessImpl::getDevicesSerialFromStdOut()
     // get devices serial by adb devices
     QStringList serials;
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    QRegExp lineExp("\r\n|\n");
-    QRegExp tExp("\t");
+    QRegExp lineExp("[\r\n]+");
+    QRegExp wsExp("\\s+");
 #else
-    QRegularExpression lineExp("\r\n|\n");
-    QRegularExpression tExp("\t");
+    QRegularExpression lineExp("[\r\n]+");
+    QRegularExpression wsExp("\\s+");
 #endif
-    QStringList devicesInfoList = m_standardOutput.split(lineExp);
-    for (QString deviceInfo : devicesInfoList) {
-        QStringList deviceInfos = deviceInfo.split(tExp);
-        if (2 == deviceInfos.count() && 0 == deviceInfos[1].compare("device")) {
+#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
+    QStringList devicesInfoList = m_standardOutput.split(lineExp, QString::SkipEmptyParts);
+#else
+    QStringList devicesInfoList = m_standardOutput.split(lineExp, Qt::SkipEmptyParts);
+#endif
+    for (const QString &deviceInfo : devicesInfoList) {
+        QString trimmed = deviceInfo.trimmed();
+        if (trimmed.isEmpty() || trimmed.startsWith("List of devices") || trimmed.startsWith("*")) {
+            continue;
+        }
+#if (QT_VERSION < QT_VERSION_CHECK(5, 14, 0))
+        QStringList deviceInfos = trimmed.split(wsExp, QString::SkipEmptyParts);
+#else
+        QStringList deviceInfos = trimmed.split(wsExp, Qt::SkipEmptyParts);
+#endif
+        if (deviceInfos.count() >= 2 && deviceInfos[1].compare("device", Qt::CaseInsensitive) == 0) {
             serials << deviceInfos[0];
         }
     }
