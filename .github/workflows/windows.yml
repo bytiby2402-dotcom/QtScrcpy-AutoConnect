@@ -2,17 +2,11 @@ name: Windows
 
 on: 
   push:
-    paths:
-      - 'QtScrcpy/**'
-      - '!QtScrcpy/res/**'
-      - '.github/workflows/windows.yml'
-      - 'ci/win**'
+    branches:
+      - main
   pull_request:
-    paths:
-      - 'QtScrcpy/**'
-      - '!QtScrcpy/res/**'
-      - '.github/workflows/windows.yml'
-      - 'ci/win**'
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
