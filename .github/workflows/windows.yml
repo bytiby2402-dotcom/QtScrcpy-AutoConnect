@@ -49,7 +49,7 @@ jobs:
       - name: Package
         shell: pwsh
         run: |
-          $publishName = "QtScrcpy-win-x64-AutoConnect"
+          $publishName = "QtScrcpy-AutoConnect-v${{ github.run_number }}-win-x64"
           $publishPath = "ci\build\$publishName"
           New-Item -ItemType Directory -Force -Path $publishPath
           
@@ -78,5 +78,5 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: QtScrcpy-AutoConnect-win-x64
-          path: ci\build\QtScrcpy-win-x64-AutoConnect.zip
+          name: QtScrcpy-AutoConnect-v${{ github.run_number }}-win-x64
+          path: ci\build\QtScrcpy-AutoConnect-v${{ github.run_number }}-win-x64
